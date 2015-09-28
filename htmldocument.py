@@ -3,9 +3,18 @@
 
 This module provides class that assist to make HTML.
 
+Author: 2011 IMAI Toshiyuki
+
+Copyright (c) 2011 IMAI Toshiyuki
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+
 Class:
     HTML -- Assist to make HTML.
 """
+__author__ = 'IMAI Toshiyuki'
+__version__ = '1.0'
 
 import os
 import Cookie
