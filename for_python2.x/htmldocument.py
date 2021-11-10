@@ -1,11 +1,11 @@
 # -*- coding: utf-8-unix; mode: python -*-
-"""Module to assist to make HTML for Python 3.
+"""Module to assist to make HTML.
 
 This module provides class that assist to make HTML.
 
-Author: 2011, 2017 IMAI Toshiyuki
+Author: 2011 IMAI Toshiyuki
 
-Copyright (c) 2011, 2017 IMAI Toshiyuki
+Copyright (c) 2011 IMAI Toshiyuki
 
 This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
@@ -17,9 +17,8 @@ __author__ = 'IMAI Toshiyuki'
 __version__ = '1.0'
 
 import os
-from http import cookies
+import Cookie
 import cgi
-import html
 
 class HTML:
 
@@ -49,6 +48,7 @@ class HTML:
         print_html_header() -- Print xhtml DTD, html start tag, head element
                                and body start tag.
         print_html_close() -- Print end tags of body element and html element.
+        printe(value) -- Encode value and print it.
         h1(content, [attrs]) -- Create h1 element.
         h2(content, [attrs]) -- Create h2 element.
         h3(content, [attrs]) -- Create h3 element.
@@ -153,13 +153,13 @@ class HTML:
             jsfiles=['./js/main.js'])
         html.print_resp_header()
         html.print_html_header()
-        print(ht.h1('Header Level 1'))
-        print(ht.p('Text body.'))
+        ht.printe(ht.h1('Header Level 1'))
+        ht.printe(ht.p('Text body.'))
         html.print_html_close()
     """
 
-    def __init__(self, encode='utf-8', lang='en', sitetitle='Untitled Site',
-                 pagetitle='Untitled', titledelimiter=' :: ',
+    def __init__(self, encode='utf-8', lang='en', sitetitle=u'Untitled Site',
+                 pagetitle=u'Untitled', titledelimiter=u' :: ',
                  cssfiles=None, jsfiles=None, jstext=None, cookie=None,
                  nocache=False):
 
@@ -230,58 +230,72 @@ class HTML:
 
         """Print HTTP Response Header."""
 
-        if self.encode == '' or not isinstance(self.encode, str):
-            print('Content-Type: text/html')
+        if self.encode == u'' or not isinstance(self.encode, basestring):
+            self.printe(u'Content-Type: text/html')
         else:
-            print('Content-Type: text/html; charset={0}'.format(
+            self.printe(u'Content-Type: text/html; charset={0}'.format(
                 self.encode))
 
-        if isinstance(self.cookie, cookies.SimpleCookie):
-            print(self.cookie.output())
+        if isinstance(self.cookie, Cookie.SimpleCookie):
+            self.printe(self.cookie.output())
 
         if self.nocache:
-            print('Pragma: no-cache')
-            print('Cache-Control: no-cache')
-            print('Expires: Thu, 01 Dec 1994 16:00:00 GMT')
+            self.printe('Pragma: no-cache')
+            self.printe('Cache-Control: no-cache')
+            self.printe('Expires: Thu, 01 Dec 1994 16:00:00 GMT')
 
-        print('')
+        self.printe(u'')
 
     def print_html_header(self):
 
-        """Print html start tag, head element and body start tag."""
+        """Print xhtml DTD, html start tag, head element and body start tag."""
 
-        dtd = '<!DOCTYPE html>'
-        print(dtd)
-        print('<html lang="{0}">'.format(self.lang))
-        print('<head>')
-        print('<title>{0} {1} {2}</title>'.format(
-            html.escape(self.pagetitle),
-            html.escape(self.titledelimiter),
-            html.escape(self.sitetitle)))
+        dtd = u'{0}{1}'.format(
+            u'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"\n',
+            u'\t"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">')
+        self.printe(dtd)
+        self.printe(u'<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="{0}" lang="{0}">'.format(self.lang))
+        self.printe(u'<head>')
+        self.printe(u'<meta http-equiv="Content-Style-Type" content="text/css" />')
+        self.printe(u'<meta http-equiv="Content-Script-Type" content="text/javascript" />')
+        self.printe(u'<title>{0} {1} {2}</title>'.format(
+            cgi.escape(self.pagetitle),
+            cgi.escape(self.titledelimiter),
+            cgi.escape(self.sitetitle)))
 
         if isinstance(self.cssfiles, list):
             for cssfile in self.cssfiles:
-                print('<link rel="stylesheet" type="text/css" href="{0}" />'.format(cssfile))
-        elif isinstance(self.cssfiles, str):
-            print('<link rel="stylesheet" type="text/css" href="{0}" />'.format(self.cssfiles))
+                self.printe(u'<link rel="stylesheet" type="text/css" href="{0}" />'.format(cssfile))
+        elif isinstance(self.cssfiles, basestring):
+            self.printe(u'<link rel="stylesheet" type="text/css" href="{0}" />'.format(self.cssfiles))
 
         if isinstance(self.jsfiles, list):
             for jsfile in self.jsfiles:
-                print('<script type="text/javascript" src="{0}"></script>'.format(jsfile))
-        elif isinstance(self.jsfiles, str):
-            print('<script type="text/javascript" src="{0}"></script>'.format(self.jsfiles))
+                self.printe(u'<script type="text/javascript" src="{0}"></script>'.format(jsfile))
+        elif isinstance(self.jsfiles, basestring):
+            self.printe(u'<script type="text/javascript" src="{0}"></script>'.format(self.jsfiles))
 
-        if isinstance(self.jstext, str):
-            print('<script type="text/javascript">{0}</script>'.format(
+        if isinstance(self.jstext, basestring):
+            self.printe(u'<script type="text/javascript">{0}</script>'.format(
                 self.jstext))
 
-        print('</head>')
-        print()
-        print('<body>')
+        self.printe(u'</head>')
+        self.printe(u'<body>')
 
     def print_html_close(self):
         """Print end tags of body element and html element."""
-        print('</body>\n</html>')
+        self.printe(u'</body>\n</html>')
+
+    def printe(self, value):
+        """Encode value and print it.
+
+        Keyword argument:
+            value -- some text
+        """
+        if isinstance(value, unicode):
+            print(value.encode(self.encode))
+        else:
+            print(value)
 
     # elements
 
@@ -294,7 +308,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('h1', content, attrs)
+        return self._create_element(u'h1', content, attrs)
 
     def h2(self, content, attrs=None):
         """Create h2 element.
@@ -303,7 +317,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('h2', content, attrs)
+        return self._create_element(u'h2', content, attrs)
 
     def h3(self, content, attrs=None):
         """Create h3 element.
@@ -312,7 +326,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('h3', content, attrs)
+        return self._create_element(u'h3', content, attrs)
 
     def h4(self, content, attrs=None):
         """Create h4 element.
@@ -321,7 +335,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('h4', content, attrs)
+        return self._create_element(u'h4', content, attrs)
 
     def h5(self, content, attrs=None):
         """Create h5 element.
@@ -330,7 +344,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('h5', content, attrs)
+        return self._create_element(u'h5', content, attrs)
 
     def h6(self, content, attrs=None):
         """Create h6 element.
@@ -339,7 +353,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('h6', content, attrs)
+        return self._create_element(u'h6', content, attrs)
 
     def p(self, content, attrs=None):
         """Create p element.
@@ -348,7 +362,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('p', content, attrs)
+        return self._create_element(u'p', content, attrs)
 
     def start_p(self, attrs=None):
         """Create start tag of p element.
@@ -356,11 +370,11 @@ class HTML:
         Keyword arguments:
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_start_tag('p', attrs)
+        return self._create_start_tag(u'p', attrs)
 
     def end_p(self):
         """Create end tag of p element."""
-        return self._create_end_tag('p')
+        return self._create_end_tag(u'p')
     
     def div(self, content, attrs=None):
         """Create div element.
@@ -369,7 +383,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('div', content, attrs)
+        return self._create_element(u'div', content, attrs)
 
     def start_div(self, attrs=None):
         """Create start tag of div element.
@@ -377,11 +391,11 @@ class HTML:
         Keyword arguments:
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_start_tag('div', attrs)
+        return self._create_start_tag(u'div', attrs)
 
     def end_div(self):
         """Create end tag of div element."""
-        return self._create_end_tag('div')
+        return self._create_end_tag(u'div')
 
     def blockquote(self, content, cite=None, attrs=None):
         """Create blockquote element.
@@ -395,7 +409,7 @@ class HTML:
             attrs = dict()
         if cite is not None:
             attrs['cite'] = cite
-        return self._create_element('blockquote', content, attrs)
+        return self._create_element(u'blockquote', content, attrs)
 
     def start_blockquote(self, cite=None, attrs=None):
         """Create start tag of blockquote element.
@@ -408,11 +422,11 @@ class HTML:
             attrs = dict()
         if cite is not None:
             attrs['cite'] = cite
-        return self._create_start_tag('blockquote', attrs)
+        return self._create_start_tag(u'blockquote', attrs)
 
     def end_blockquote(self):
         """Create end tag of blockquote element."""
-        return self._create_end_tag('blockqute')
+        return self._create_end_tag(u'blockqute')
 
     def pre(self, content, attrs=None):
         """Create pre element.
@@ -421,7 +435,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('pre', content, attrs)
+        return self._create_element(u'pre', content, attrs)
 
     def start_pre(self, attrs=None):
         """Create start tag of pre element.
@@ -429,11 +443,11 @@ class HTML:
         Keyword arguments:
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_start_tag('pre', attrs)
+        return self._create_start_tag(u'pre', attrs)
 
     def end_pre(self):
         """Create end tag of pre element."""
-        return self._create_end_tag('pre')
+        return self._create_end_tag(u'pre')
 
     def address(self, content, attrs=None):
         """Create address element.
@@ -442,7 +456,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('address', content, attrs)
+        return self._create_element(u'address', content, attrs)
 
     def fieldset(self):
         pass
@@ -454,7 +468,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('del', content, attrs)
+        return self._create_element(u'del', content, attrs)
 
     def ins(self, content, attrs=None):
         """Create ins element.
@@ -463,7 +477,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('ins', content, attrs)
+        return self._create_element(u'ins', content, attrs)
 
     # inline
 
@@ -474,7 +488,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('a', content, attrs)
+        return self._create_element(u'a', content, attrs)
 
     def em(self, content, attrs=None):
         """Create em element.
@@ -483,7 +497,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('em', content, attrs)
+        return self._create_element(u'em', content, attrs)
 
     def strong(self, content, attrs=None):
         """Create strong element.
@@ -492,7 +506,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('strong', content, attrs)
+        return self._create_element(u'strong', content, attrs)
 
     def abbr(self, content, attrs=None):
         """Create abbr element.
@@ -501,7 +515,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('abbr', content, attrs)
+        return self._create_element(u'abbr', content, attrs)
 
     def acronym(self, content, attrs=None):
         """Create acronym element.
@@ -510,7 +524,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('acronym', content, attrs)
+        return self._create_element(u'acronym', content, attrs)
 
     def bdo(self, content, attrs=None):
         """Create bdo element.
@@ -519,7 +533,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('bdo', content, attrs)
+        return self._create_element(u'bdo', content, attrs)
 
     def cite(self, content, attrs=None):
         """Create cite element.
@@ -528,7 +542,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('cite', content, attrs)
+        return self._create_element(u'cite', content, attrs)
 
     def code(self, content, attrs=None):
         """Create code element.
@@ -537,7 +551,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('code', content, attrs)
+        return self._create_element(u'code', content, attrs)
 
     def dfn(self, content, attrs=None):
         """Create dfn element.
@@ -546,7 +560,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('dfn', content, attrs)
+        return self._create_element(u'dfn', content, attrs)
 
     def kbd(self, content, attrs=None):
         """Create kbd element.
@@ -555,7 +569,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('kbd', content, attrs)
+        return self._create_element(u'kbd', content, attrs)
 
     def q(self, content, attrs=None):
         """Create q element.
@@ -564,7 +578,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('q', content, attrs)
+        return self._create_element(u'q', content, attrs)
 
     def samp(self, content, attrs=None):
         """Create samp element.
@@ -573,7 +587,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('samp', content, attrs)
+        return self._create_element(u'samp', content, attrs)
 
     def span(self, content, attrs=None):
         """Create span element.
@@ -582,7 +596,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('span', content, attrs)
+        return self._create_element(u'span', content, attrs)
 
     def sub(self, content, attrs=None):
         """Create sub element.
@@ -591,7 +605,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('sub', content, attrs)
+        return self._create_element(u'sub', content, attrs)
 
     def sup(self, content, attrs=None):
         """Create sup element.
@@ -600,7 +614,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('sup', content, attrs)
+        return self._create_element(u'sup', content, attrs)
 
     def var(self, content, attrs=None):
         """Create var element.
@@ -609,7 +623,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('var', content, attrs)
+        return self._create_element(u'var', content, attrs)
 
     def ruby(self, content, title, attrs=None):
         """Create ruby element.
@@ -619,7 +633,7 @@ class HTML:
             title -- ruby title text
             attrs -- dict object that contains attributes (default None)
         """
-        return '<ruby><rp>（</rp><rb>{0}</rb><rt>{1}</rb><rp>）</rp></ruby>'.format(content, title)
+        return u'<ruby><rp>（</rp><rb>{0}</rb><rt>{1}</rb><rp>）</rp></ruby>'.format(content, title)
         
 
     # list
@@ -631,7 +645,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('ol', content, attrs)
+        return self._create_element(u'ol', content, attrs)
 
     def start_ol(self, attrs=None):
         """Create start tag of ol element.
@@ -639,11 +653,11 @@ class HTML:
         Keyword arguments:
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_start_tag('ol', attrs)
+        return self._create_start_tag(u'ol', attrs)
 
     def end_ol(self):
         """Create end tag of ol element."""
-        return self._create_end_tag('ol')
+        return self._create_end_tag(u'ol')
 
     def ul(self, content, attrs=None):
         """Create ul element.
@@ -652,7 +666,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('ul', content, attrs)
+        return self._create_element(u'ul', content, attrs)
 
     def start_ul(self, attrs=None):
         """Create start tag of ul element.
@@ -660,11 +674,11 @@ class HTML:
         Keyword arguments:
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_start_tag('ul', attrs)
+        return self._create_start_tag(u'ul', attrs)
 
     def end_ul(self):
         """Create end tag of ul element."""
-        return self._create_end_tag('ul')
+        return self._create_end_tag(u'ul')
 
     def li(self, content, attrs=None):
         """Create li element.
@@ -676,10 +690,10 @@ class HTML:
         if isinstance(content, list) or isinstance(content, tuple):
             result = list()
             for li in content:
-                result.append(self._create_element('li', li, attrs))
-            return ''.join(result)
+                result.append(self._create_element(u'li', li, attrs))
+            return u''.join(result)
         else:
-            return self._create_element('li', content, attrs)
+            return self._create_element(u'li', content, attrs)
 
     def dl(self, content, attrs=None):
         """Create dl element.
@@ -695,9 +709,9 @@ class HTML:
                 result.append(self.dt(di))
                 result.append(self.dd(content[di]))
             result.append(self.end_dl())
-            return ''.join(result)
+            return u''.join(result)
         else:
-            return self._create_element('dl', content, attrs)
+            return self._create_element(u'dl', content, attrs)
 
     def start_dl(self, attrs=None):
         """Create start tag of dl element.
@@ -705,11 +719,11 @@ class HTML:
         Keyword arguments:
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_start_tag('dl', attrs)
+        return self._create_start_tag(u'dl', attrs)
 
     def end_dl(self):
         """Create end tag of p element."""
-        return self._create_end_tag('dl')
+        return self._create_end_tag(u'dl')
 
     def dt(self, content, attrs=None):
         """Create dt element.
@@ -718,7 +732,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('dt', content, attrs)
+        return self._create_element(u'dt', content, attrs)
 
     def dd(self, content, attrs=None):
         """Create dd element.
@@ -727,7 +741,7 @@ class HTML:
             content -- some text
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_element('dd', content, attrs)
+        return self._create_element(u'dd', content, attrs)
 
     # empty
 
@@ -737,7 +751,7 @@ class HTML:
         Keyword arguments:
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_empty_element('br', attrs)
+        return self._create_empty_element(u'br', attrs)
 
     def hr(self, attrs=None):
         """Create hr element.
@@ -745,7 +759,7 @@ class HTML:
         Keyword arguments:
             attrs -- dict object that contains attributes (default None)
         """
-        return self._create_empty_element('hr', attrs)
+        return self._create_empty_element(u'hr', attrs)
 
     # form elements
 
@@ -761,7 +775,7 @@ class HTML:
         if attrs is None or not isinstance(attrs, dict):
             attrs = {}
         if method is None:
-            attrs['method'] = 'POST'
+            attrs['method'] = u'POST'
         else:
             attrs['method'] = method
         if action is None:
@@ -770,10 +784,10 @@ class HTML:
             attrs['action'] = action
         if enctype is not None:
             attrs['enctype'] = enctype
-        return self._create_start_tag('form', attrs)
+        return self._create_start_tag(u'form', attrs)
 
     def start_multipart_form(self, method=None, action=None,
-                             enctype='multipart/form-data', attrs=None):
+                             enctype=u'multipart/form-data', attrs=None):
         """Create start tag of form element for multipart.
 
         Keyword arguments:
@@ -785,7 +799,7 @@ class HTML:
         if attrs is None or not isinstance(attrs, dict):
             attrs = {}
         if method is None:
-            attrs['method'] = 'POST'
+            attrs['method'] = u'POST'
         else:
             attrs['method'] = method
         if action is None:
@@ -794,11 +808,11 @@ class HTML:
             attrs['action'] = action
         if enctype is not None:
             attrs['enctype'] = enctype
-        return self._create_start_tag('form', attrs)
+        return self._create_start_tag(u'form', attrs)
 
     def end_form(self):
         """Create end tag of form element."""
-        return self._create_end_tag('form')
+        return self._create_end_tag(u'form')
 
     def textfield(self, name=None, value=None, size=None, maxlength=None,
                   attrs=None):
@@ -817,7 +831,7 @@ class HTML:
         attrs['value'] = value
         attrs['size'] = size
         attrs['maxlength'] = maxlength
-        return self.input('text', attrs)
+        return self.input(u'text', attrs)
 
     def textarea(self, name=None, value=None, rows=None, columns=None,
                  attrs=None):
@@ -836,8 +850,8 @@ class HTML:
         attrs['rows'] = rows
         attrs['cols'] = columns
         if value is None:
-            value = ''
-        return self._create_element('textarea', value, attrs)
+            value = u''
+        return self._create_element(u'textarea', value, attrs)
 
     def password_field(self, name=None, value=None, size=None,
                        maxlength=None, attrs=None):
@@ -856,7 +870,7 @@ class HTML:
         attrs['value'] = value
         attrs['size'] = size
         attrs['maxlength'] = maxlength
-        return self.input('password', attrs)
+        return self.input(u'password', attrs)
 
     def filefield(self, name=None, value=None, size=None, maxlength=None,
                   attrs=None):
@@ -875,7 +889,7 @@ class HTML:
         attrs['value'] = value
         attrs['size'] = size
         attrs['maxlength'] = maxlength
-        return self.input('file', attrs)
+        return self.input(u'file', attrs)
 
     def popup_menu(self, name=None, values=None, default=None,
                    labels=None, attributes=None, attrs=None):
@@ -933,23 +947,23 @@ class HTML:
         """
 
         if not isinstance(values, list) and not isinstance(values, tuple):
-            raise TypeError('need list, got %r' % type(values))
+            raise TypeError(u'need list, got %r' % type(values))
         if labels is not None and not isinstance(labels, dict):
-            raise TypeError('need dict, got %r' % type(labels))
+            raise TypeError(u'need dict, got %r' % type(labels))
         if attributes is not None and not isinstance(attributes, dict):
-            raise TypeError('need dict, got %r' % type(attributes))
+            raise TypeError(u'need dict, got %r' % type(attributes))
         if attrs is None or not isinstance(attrs, dict):
             attrs = {}
         attrs['name'] = name
         if isinstance(size, int):
             attrs['size'] = size
         if multiple:
-            attrs['multiple'] = 'multiple'
-        result = self._create_start_tag('select', attrs)
+            attrs['multiple'] = u'multiple'
+        result = self._create_start_tag(u'select', attrs)
         for li in values:
             attrs = {}
             if attributes is not None:
-                if li in attributes:
+                if attributes.has_key(li):
                     if isinstance(attributes[li], dict):
                         attrs = attributes[li]
             attrs['value'] = li
@@ -957,18 +971,18 @@ class HTML:
             if isinstance(default, list) or isinstance(default, tuple):
                 for item in default:
                     if item == li:
-                        attrs['selected'] = 'selected'
+                        attrs['selected'] = u'selected'
             else:
                 if default == li:
-                    attrs['selected'] = 'selected'
+                    attrs['selected'] = u'selected'
 
             content = li
             if labels is not None:
-                if li in labels:
+                if labels.has_key(li):
                     if labels[li] is not None:
                         content = labels[li]
-            result += self._create_element('option', content, attrs)
-        result += self._create_end_tag('select')
+            result += self._create_element(u'option', content, attrs)
+        result += self._create_end_tag(u'select')
         return result
 
     def checkbox_group(self, name=None, values=None, default=None,
@@ -988,12 +1002,12 @@ class HTML:
                           (default None)
             attrs -- dict object that contains attributes (default None)
         """
-        return self.button_group(type='checkbox', name=name,values=values,
+        return self.button_group(type=u'checkbox', name=name,values=values,
                                  default=default, delimiter=delimiter,
                                  labels=labels, attributes=attributes,
                                  attrs=attrs)
 
-    def checkbox(self, name=None, checked=False, value=None, label='',
+    def checkbox(self, name=None, checked=False, value=None, label=u'',
                  attrs=None):
         """Create input element as form item check box group.
 
@@ -1011,14 +1025,14 @@ class HTML:
             attrs['checked'] = checked
         attrs['value'] = value
         result = []
-        result.append(self.input('checkbox', attrs))
+        result.append(self.input(u'checkbox', attrs))
         if len(label) == 0:
             label = value
         if isinstance(label, int):
             label = str(int)
         if label is not None:
             result.append(label)
-        return ' '.join(result)
+        return u' '.join(result)
 
     def radio_group(self, name=None, values=None, default=None,
                      delimiter=None,labels=None, attributes=None, attrs=None):
@@ -1038,12 +1052,12 @@ class HTML:
         """
         if isinstance(default, list) or isinstance(default, tuple):
             default = default[0]
-        return self.button_group(type='radio', name=name,values=values,
+        return self.button_group(type=u'radio', name=name,values=values,
                                  default=default, delimiter=delimiter,
                                  labels=labels, attributes=attributes,
                                  attrs=attrs)
 
-    def button_group(self, type='radio', name=None, values=None,
+    def button_group(self, type=u'radio', name=None, values=None,
                      default=None, delimiter=None,labels=None,
                      attributes=None, attrs=None):
 
@@ -1064,11 +1078,11 @@ class HTML:
         """
 
         if not isinstance(values, list):
-            raise TypeError('need list, got %r' % type(values))
+            raise TypeError(u'need list, got %r' % type(values))
         if labels is not None and not isinstance(labels, dict):
-            raise TypeError('need dict, got %r' % type(labels))
+            raise TypeError(u'need dict, got %r' % type(labels))
         if attributes is not None and not isinstance(attributes, dict):
-            raise TypeError('need dict, got %r' % type(attributes))
+            raise TypeError(u'need dict, got %r' % type(attributes))
 
         result = []
         for li in values:
@@ -1076,7 +1090,7 @@ class HTML:
             if attrs is not None or isinstance(attrs, dict):
                 iattrs.update(attrs)
             if attributes is not None:
-                if li in attributes:
+                if attributes.has_key(li):
                     if isinstance(attributes[li], dict):
                         iattrs.update(attributes[li])
             iattrs['name'] = name
@@ -1085,20 +1099,20 @@ class HTML:
             if isinstance(default, list):
                 for item in default:
                     if item == li:
-                        iattrs['checked'] = 'checked'
+                        iattrs['checked'] = u'checked'
             else:
                 if default == li:
-                    iattrs['checked'] = 'checked'
+                    iattrs['checked'] = u'checked'
 
             content = li
             if labels is not None:
-                if li in labels:
+                if labels.has_key(li):
                     if labels[li] is not None:
                         content = labels[li]
             if isinstance(content, int):
                 content = str(content)
-            result.append('{0} {1}'.format(self.input(type, iattrs), content))
-        if delimiter is not None and isinstance(delimiter, str):
+            result.append(u'{0} {1}'.format(self.input(type, iattrs), content))
+        if delimiter is not None and isinstance(delimiter, basestring):
             result = delimiter.join(result)
         return result
         
@@ -1115,7 +1129,7 @@ class HTML:
             attrs = {}
         attrs['name'] = name
         attrs['value'] = value
-        return self.input('submit', attrs)
+        return self.input(u'submit', attrs)
 
     def reset(self, name=None, value=None, attrs=None):
         """Create input element as form item reset button.
@@ -1129,7 +1143,7 @@ class HTML:
             attrs = {}
         attrs['name'] = name
         attrs['value'] = value
-        return self.input('reset', attrs)
+        return self.input(u'reset', attrs)
 
     def button(self, name=None, value=None, attrs=None):
         """Create input element as form item button.
@@ -1143,7 +1157,7 @@ class HTML:
             attrs = {}
         attrs['name'] = name
         attrs['value'] = value
-        return self.input('button', attrs)
+        return self.input(u'button', attrs)
 
     def hidden(self, name=None, value=None, attrs=None):
         """Create input element as form item hidden.
@@ -1157,7 +1171,7 @@ class HTML:
             attrs = {}
         attrs['name'] = name
         attrs['value'] = value
-        return self.input('hidden', attrs)
+        return self.input(u'hidden', attrs)
 
     def input(self, type, attrs=None):
         """Create input element.
@@ -1173,28 +1187,28 @@ class HTML:
 
 
     def formitem(self, value, attrs=None):
-        return self._create_element('input', value, attrs)
+        return self._create_element(u'input', value, attrs)
 
     # internal methods
 
     def _create_start_tag(self, elemname, attrs=None):
-        return '<{0}{1}>'.format(elemname, self._create_attr_string(attrs))
+        return u'<{0}{1}>'.format(elemname, self._create_attr_string(attrs))
 
     def _create_end_tag(self, elemname):
-        return '</{0}>'.format(elemname)
+        return u'</{0}>'.format(elemname)
 
     def _create_attr_string(self, attrs):
-        attrstr = ''
+        attrstr = u''
         if isinstance(attrs, dict):
             for attrname in (attrs.keys()):
                 if attrs[attrname] is not None:
                     attrvalue = attrs[attrname]
                     if isinstance(attrvalue, int):
                         attrvalue = str(attrvalue)
-                    attrstr = '{0} {1}="{2}"'.format(
+                    attrstr = u'{0} {1}="{2}"'.format(
                         attrstr,
-                        html.escape(attrname, True),
-                        html.escape(attrvalue, True))
+                        cgi.escape(attrname, True),
+                        cgi.escape(attrvalue, True))
         return attrstr
 
     def _create_element(self, elemname, content, attrs=None):
@@ -1202,10 +1216,10 @@ class HTML:
         endtag = self._create_end_tag(elemname)
         if isinstance(content, int):
             content = str(content)
-        if isinstance(content, str):
-            return '{0}{1}{2}'.format(starttag, content, endtag)
+        if isinstance(content, basestring):
+            return u'{0}{1}{2}'.format(starttag, content, endtag)
         else:
-            raise TypeError('need string or int, got %r' % type(content))
+            raise TypeError(u'need string or int, got %r' % type(content))
         
     def _create_empty_element(self, elemname, attrs=None):
-        return '<{0}{1} />'.format(elemname, self._create_attr_string(attrs))
+        return u'<{0}{1} />'.format(elemname, self._create_attr_string(attrs))
